@@ -1,0 +1,10 @@
+<sqls>
+    <sql id="test" paramNumber="1">
+        select * from blog
+        <where>
+            blog_id in (:1)
+            and
+            blog_id &lt;= 5
+        </where>
+    </sql>
+</sqls>
