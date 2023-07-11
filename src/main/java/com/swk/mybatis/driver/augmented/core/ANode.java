@@ -106,6 +106,9 @@ public class ANode {
         String prefix = sqlStr.substring(0, SQLBlock.getLeft());
         String suffix = sqlStr.substring(SQLBlock.getRight() + 1);
 
+        prefix = UnionUtil.replaceStr(prefix);
+        suffix =  UnionUtil.replaceStr(suffix);
+
         return prefix +
                 SQLBlock.getValue().handle(originXNode, params.get(SQLBlock))
                 + suffix;

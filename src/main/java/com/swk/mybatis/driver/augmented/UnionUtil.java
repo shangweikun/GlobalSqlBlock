@@ -222,4 +222,12 @@ public class UnionUtil {
     public static DocumentBuilder builder() {
         return _BUILDER;
     }
+
+    public static String replaceStr(String prefix) {
+
+        if (prefix == null || prefix.isEmpty()) {
+            return prefix;
+        }
+        return prefix.replaceAll("<", "&lt;");
+    }
 }
