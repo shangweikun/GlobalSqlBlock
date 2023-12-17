@@ -1,0 +1,17 @@
+<select id="id1">
+    select 1 from dual
+    blog_id &lt;= 5
+    and
+    blog_id <![CDATA[<=]]> 6
+    <where>
+        blog_id in (:1)
+        and
+        blog_id &lt;= 5
+        and
+        blog_id <![CDATA[<=]]> 6
+    </where>
+    select 1 from dual
+    blog_id &lt;= 5
+    and
+    blog_id <![CDATA[<=]]> 6
+</select>

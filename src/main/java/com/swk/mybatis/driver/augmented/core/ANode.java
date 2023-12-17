@@ -1,5 +1,6 @@
 package com.swk.mybatis.driver.augmented.core;
 
+import com.swk.mybatis.driver.augmented.extention.sql.GlobalSqlBlock;
 import com.swk.mybatis.driver.augmented.param.SQLParam;
 import com.swk.mybatis.driver.augmented.UnionUtil;
 import org.apache.ibatis.parsing.XNode;
@@ -24,9 +25,9 @@ public class ANode {
 
     private Node targetNode;
 
-    private final Map<Coordinates<XmlSQLBlock>, List<SQLParam>> params = new HashMap<>();
+    private final Map<Coordinates<GlobalSqlBlock>, List<SQLParam>> params = new HashMap<>();
 
-    private final List<Coordinates<XmlSQLBlock>> SQLBlocks = new ArrayList<>();
+    private final List<Coordinates<GlobalSqlBlock>> SQLBlocks = new ArrayList<>();
 
     private void replaceTargetNode(String sqlStr) {
 
@@ -102,7 +103,7 @@ public class ANode {
         return result;
     }
 
-    private String resolve(String sqlStr, Coordinates<XmlSQLBlock> SQLBlock) {
+    private String resolve(String sqlStr, Coordinates<GlobalSqlBlock> SQLBlock) {
         String prefix = sqlStr.substring(0, SQLBlock.getLeft());
         String suffix = sqlStr.substring(SQLBlock.getRight() + 1);
 
@@ -123,11 +124,11 @@ public class ANode {
         this.targetNode = targetNode;
     }
 
-    public Map<Coordinates<XmlSQLBlock>, List<SQLParam>> getParams() {
+    public Map<Coordinates<GlobalSqlBlock>, List<SQLParam>> getParams() {
         return params;
     }
 
-    public List<Coordinates<XmlSQLBlock>> getSQLBlocks() {
+    public List<Coordinates<GlobalSqlBlock>> getSQLBlocks() {
         return SQLBlocks;
     }
 
@@ -135,11 +136,11 @@ public class ANode {
 
         String sqlStr = targetNode.getNodeValue();
 
-        List<Coordinates<XmlSQLBlock>> sortedSQLBlocks = SQLBlocks.stream()
+        List<Coordinates<GlobalSqlBlock>> sortedSQLBlocks = SQLBlocks.stream()
                 .sorted((o1, o2) -> Integer.compare(o2.getLeft(), o1.getLeft()))
                 .collect(Collectors.toList());
 
-        for (Coordinates<XmlSQLBlock> sortedSQLBlock : sortedSQLBlocks) {
+        for (Coordinates<GlobalSqlBlock> sortedSQLBlock : sortedSQLBlocks) {
             sqlStr = resolve(sqlStr, sortedSQLBlock);
         }
 

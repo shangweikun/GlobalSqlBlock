@@ -1,11 +1,8 @@
 package com.swk.mybatis.driver.augmented;
 
-import com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl;
 import com.swk.mybatis.driver.augmented.core.ANode;
 import com.swk.mybatis.driver.augmented.core.Coordinates;
-import com.swk.mybatis.driver.augmented.core.XmlSQLBlock;
-import com.swk.mybatis.driver.augmented.param.DefaultSQLParam;
-import com.swk.mybatis.driver.augmented.param.ListSQLParam;
+import com.swk.mybatis.driver.augmented.extention.sql.GlobalSqlBlock;
 import com.swk.mybatis.driver.augmented.param.ParamFactory;
 import com.swk.mybatis.driver.augmented.param.SQLParam;
 import org.apache.ibatis.parsing.XNode;
@@ -13,6 +10,7 @@ import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -24,7 +22,7 @@ import java.util.*;
 
 public class UnionUtil {
 
-    private static final Map<String, XmlSQLBlock> directory = new HashMap<>();
+    private static final Map<String, GlobalSqlBlock> directory = new HashMap<>();
 
     private static final String _GLOBAL_SQL_PREFIX = "@sql{";
     private static final String _GLOBAL_SQL_SUFFIX = "}";
@@ -47,7 +45,7 @@ public class UnionUtil {
             _TRANSFORMER = TransformerFactory.newInstance().newTransformer();
             _TRANSFORMER.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 
-            _BUILDER = DocumentBuilderFactoryImpl.newInstance().newDocumentBuilder();
+            _BUILDER = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 
         } catch (TransformerConfigurationException | ParserConfigurationException e) {
             throw new RuntimeException(e);
@@ -104,6 +102,8 @@ public class UnionUtil {
             NamedNodeMap attributes = item.getAttributes();
             String id = attributes.getNamedItem("id").getNodeValue();
 
+            test(item);
+
             StringWriter writer = new StringWriter();
             try {
                 UnionUtil.transformer()
@@ -122,10 +122,84 @@ public class UnionUtil {
             if ((paramsNumberNode = attributes.getNamedItem("paramNumber")) != null) {
                 paramsNumber = Integer.parseInt(paramsNumberNode.getNodeValue());
             }
-            XmlSQLBlock sqlBlockEntity = new XmlSQLBlock().generate(sqlBlockStr, id, paramsNumber);
+            GlobalSqlBlock sqlBlockEntity = new GlobalSqlBlock().generate(sqlBlockStr, id, paramsNumber);
 
             directory.put(id, sqlBlockEntity);
         }
+    }
+
+    private static void test(Node item) {
+
+        NodeList childNodes = item.getChildNodes();
+
+        try (InputStream inputStream = GlobalSqlBlockMyBatisDriver.class.getClassLoader()
+                .getResourceAsStream("test.xml")) {
+            Document doc = UnionUtil.builder().parse(inputStream);
+            Element roots = doc.getDocumentElement();
+            NodeList childNodes1 = roots.getChildNodes();
+            Node item1 = childNodes1.item(childNodes1.getLength() - 1);
+
+            List<Node> nodes = new ArrayList<>();
+            for (int i = 0; i < childNodes.getLength(); i++) {
+                nodes.add(childNodes.item(i));
+            }
+
+            for (int i = 0; i < nodes.size(); i++) {
+                Node item2 = nodes.get(i);
+                Node node = item2.cloneNode(true);
+                roots.getOwnerDocument().adoptNode(node);
+                roots.appendChild(node);
+            }
+
+            StringWriter writer = new StringWriter();
+            try {
+                UnionUtil.transformer()
+                        .transform(new DOMSource(roots), new StreamResult(writer));
+            } catch (TransformerException e) {
+                throw new RuntimeException(e);
+            }
+            String sqlBlockStr = writer.getBuffer().toString();
+
+            System.out.println("result " + sqlBlockStr);
+
+
+        } catch (IOException | SAXException e) {
+            throw new RuntimeException(String.format("error !!! please connect developer : email - [%s]", "shangweikun@yeah.net"));
+        }
+
+    }
+
+    private static void test() {
+
+        try (InputStream inputStream = GlobalSqlBlockMyBatisDriver.class.getClassLoader()
+                .getResourceAsStream("test.xml")) {
+            Document doc = UnionUtil.builder().parse(inputStream);
+            Element roots = doc.getDocumentElement();
+
+            StringWriter writer = new StringWriter();
+            try {
+                UnionUtil.transformer()
+                        .transform(new DOMSource(roots), new StreamResult(writer));
+            } catch (TransformerException e) {
+                throw new RuntimeException(e);
+            }
+            String sqlBlockStr = writer.getBuffer().toString();
+
+            System.out.println("result " + sqlBlockStr);
+
+
+        } catch (IOException | SAXException e) {
+            throw new RuntimeException(String.format("error !!! please connect developer : email - [%s]", "shangweikun@yeah.net"));
+        }
+
+    }
+
+    public static void main(String[] args) {
+
+//        test();
+        UnionUtil.init();
+
+        System.out.println(1);
     }
 
     static void init() {
@@ -175,30 +249,30 @@ public class UnionUtil {
                     String blockStr = value.substring(begin + 5, end);
                     String globalSqlId;
                     List<SQLParam> params = new ArrayList<>();
-                    XmlSQLBlock xmlSQLBlock;
+                    GlobalSqlBlock globalSqlBlock;
 
                     int pBegin = blockStr.indexOf(_PARAM_PREFIX);
                     if (pBegin < 0) {
                         globalSqlId = blockStr;
-                        xmlSQLBlock = directory.get(globalSqlId);
+                        globalSqlBlock = directory.get(globalSqlId);
                     } else {
                         int pEnd = blockStr.indexOf(_PARAM_SUFFIX, pBegin);
                         if (pEnd < 0) {
                             throw new RuntimeException(String.format("[%s] has global sql block , but param's end flag is not find, please check your mapper xml file", namedItem.getNodeValue()));
                         }
                         globalSqlId = blockStr.substring(0, pBegin);
-                        xmlSQLBlock = directory.get(globalSqlId);
+                        globalSqlBlock = directory.get(globalSqlId);
                         params.addAll(handleParams(blockStr.substring(pBegin + 1, pEnd)));
                     }
 
-                    if (xmlSQLBlock == null) {
+                    if (globalSqlBlock == null) {
                         throw new RuntimeException(String.format("[%s] has global sql block , but sql block id [%s]do not find, please check you global sql xml file", namedItem.getNodeValue(), globalSqlId));
                     }
-                    Coordinates<XmlSQLBlock> xmlSQLBlockCoordinates = new Coordinates<>();
+                    Coordinates<GlobalSqlBlock> xmlSQLBlockCoordinates = new Coordinates<>();
 
                     xmlSQLBlockCoordinates.setLeft(begin);
                     xmlSQLBlockCoordinates.setRight(end);
-                    xmlSQLBlockCoordinates.setValue(xmlSQLBlock);
+                    xmlSQLBlockCoordinates.setValue(globalSqlBlock);
 
                     aNode.getSQLBlocks().add(xmlSQLBlockCoordinates);
 

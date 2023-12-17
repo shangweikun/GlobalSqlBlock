@@ -1,5 +1,6 @@
-package com.swk.mybatis.driver.augmented.core;
+package com.swk.mybatis.driver.augmented.extention.sql;
 
+import com.swk.mybatis.driver.augmented.core.Coordinates;
 import com.swk.mybatis.driver.augmented.param.ParamFactory;
 import com.swk.mybatis.driver.augmented.param.SQLParam;
 import org.apache.ibatis.parsing.XNode;
@@ -9,7 +10,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class XmlSQLBlock {
+public class GlobalSqlBlock {
 
     private static final String paramPatternStr = ":[0-9]+";
 
@@ -38,7 +39,7 @@ public class XmlSQLBlock {
         return result;
     }
 
-    public XmlSQLBlock generate(String sqlBlockStr, String id, int paramsNum) {
+    public GlobalSqlBlock generate(String sqlBlockStr, String id, int paramsNum) {
 
         this.sql = sqlBlockStr;
         this.id = id;
